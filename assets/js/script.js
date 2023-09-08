@@ -202,7 +202,7 @@ let allJsonKeys = [...mainKeys, ...embedKeys];
 let jsonObject = window.json || {
     content: "",
     embed: {
-        title: "Hello ~~people~~ world :wave:",
+        title: "Olá ~~pessoas~~ do mundo :wave:",
         description: "Vocë pode usar [links](https://discord.com) ou emojis :smile: 😎\n```\nE também blocos de código\n```",
         color: 0x41f097,
         timestamp: new Date().toISOString(),

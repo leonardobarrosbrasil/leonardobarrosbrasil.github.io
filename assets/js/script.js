@@ -168,10 +168,10 @@ const changeLastActiveGuiEmbed = index => {
 
         const guiEmbedNames = document.querySelectorAll('.gui .item.guiEmbedName');
         pickerEmbedText.onclick = () => {
-            const newIndex = parseInt(prompt('Enter an embed number' + (guiEmbedNames.length > 1 ? `, 1 - ${guiEmbedNames.length}` : ''), index + 1));
+            const newIndex = parseInt(prompt('Insira um número de incorporação' + (guiEmbedNames.length > 1 ? `, 1 - ${guiEmbedNames.length}` : ''), index + 1));
             if (isNaN(newIndex)) return;
             if (newIndex < 1 || newIndex > guiEmbedNames.length)
-                return error(guiEmbedNames.length === 1 ? `'${newIndex}' is not a valid embed number` : `'${newIndex}' doesn't seem like a number between 1 and ${guiEmbedNames.length}`);
+                return error(guiEmbedNames.length === 1 ? `'${newIndex}' não é um número de incorporação válido` : `'${newIndex}' não parece um número entre 1 e ${guiEmbedNames.length}`);
 
             changeLastActiveGuiEmbed(newIndex - 1);
         }
@@ -203,12 +203,12 @@ let jsonObject = window.json || {
     content: "",
     embed: {
         title: "Hello ~~people~~ world :wave:",
-        description: "You can use [links](https://discord.com) or emojis :smile: 😎\n```\nAnd also code blocks\n```",
+        description: "Vocë pode usar links [links](https://discord.com) ou emojis :smile: 😎\n```\nE também blocos de código\n```",
         color: 0x41f097,
         timestamp: new Date().toISOString(),
         url: "https://discord.com",
         author: {
-            name: "Author name",
+            name: "Nome do autor",
             url: "https://discord.com",
             icon_url: "https://cdn.discordapp.com/embed/avatars/0.png"
         },
@@ -219,37 +219,37 @@ let jsonObject = window.json || {
             url: "https://glitchii.github.io/embedbuilder/assets/media/banner.png"
         },
         footer: {
-            text: "Footer text",
+            text: "Texto de rodapé",
             icon_url: "https://cdn.discordapp.com/embed/avatars/0.png"
         },
         fields: [
             {
-                name: "Field 1, *lorem* **ipsum**, ~~dolor~~",
+                name: "Seção 1, *lorem* **ipsum**, ~~dolor~~",
                 value: "Field value"
             },
             {
-                name: "Field 2",
-                value: "You can use custom emojis <:Kekwlaugh:722088222766923847>. <:GangstaBlob:742256196295065661>",
+                name: "Seção 2",
+                value: "Vocë pode usar emojis personalizados <:Kekwlaugh:722088222766923847>. <:GangstaBlob:742256196295065661>",
                 inline: false
             },
             {
-                name: "Inline field",
-                value: "Fields can be inline",
+                name: "Campo embutido",
+                value: "Os campos podem estar embutidos",
                 inline: true
             },
             {
-                name: "Inline field",
+                name: "Campo embutido",
                 value: "*Lorem ipsum*",
                 inline: true
             },
             {
-                name: "Inline field",
+                name: "Campo embutido",
                 value: "value",
                 inline: true
             },
             {
-                name: "Another field",
-                value: "> Nope, didn't forget about this",
+                name: "Campo embutido",
+                value: "> Não, não esqueci disso",
                 inline: false
             }
         ]

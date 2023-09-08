@@ -203,7 +203,7 @@ let jsonObject = window.json || {
     content: "",
     embed: {
         title: "Hello ~~people~~ world :wave:",
-        description: "Vocë pode usar links [links](https://discord.com) ou emojis :smile: 😎\n```\nE também blocos de código\n```",
+        description: "Vocë pode usar [links](https://discord.com) ou emojis :smile: 😎\n```\nE também blocos de código\n```",
         color: 0x41f097,
         timestamp: new Date().toISOString(),
         url: "https://discord.com",

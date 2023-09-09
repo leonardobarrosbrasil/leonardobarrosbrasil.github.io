@@ -8,9 +8,17 @@ window.options ??= {};
 window.inIframe ??= top !== self;
 mainHost = "glitchii.github.io";
 
-let params = new URLSearchParams(location.search),
+Object.defineProperty(window, 'currentURL', {
+    get() {
+        // Get the current url or referrer url if in iframe
+        const urlRegex = /(https?:\/\/(?:[\d\w]+\.)?[\d\w\.]+(?::\d+)?)/g;
+        return new URL(inIframe ? urlRegex.exec(document.referrer)?.[0] || location.href : location.href);
+    }
+});
+
+let params = currentURL.searchParams,
     hasParam = param => params.get(param) !== null,
-    dataSpecified = options.data || params.get('data'),
+    dataSpecified = options.dataSpecified || params.get('data'),
     username = params.get('username') || options.username,
     avatar = params.get('avatar') || options.avatar,
     guiTabs = params.get('guitabs') || options.guiTabs,
@@ -22,8 +30,7 @@ let params = new URLSearchParams(location.search),
     allowPlaceholders = hasParam('placeholders') || options.allowPlaceholders,
     autoUpdateURL = localStorage.getItem('autoUpdateURL') || options.autoUpdateURL,
     noMultiEmbedsOption = localStorage.getItem('noMultiEmbedsOption') || hasParam('nomultiembedsoption') || options.noMultiEmbedsOption,
-    single = noMultiEmbedsOption ? options.single ?? true : (localStorage.getItem('single') || hasParam('single') || options.single) ?? false,
-    multiEmbeds = !single,
+    multiEmbeds = noMultiEmbedsOption ? options.multiEmbeds ?? true : (localStorage.getItem('multiEmbeds') || hasParam('multiembeds') || options.multiEmbeds) ?? true,
     autoParams = localStorage.getItem('autoParams') || hasParam('autoparams') || options.autoParams,
     hideEditor = localStorage.getItem('hideeditor') || hasParam('hideeditor') || options.hideEditor,
     hidePreview = localStorage.getItem('hidepreview') || hasParam('hidepreview') || options.hidePreview,
@@ -63,14 +70,14 @@ const createElement = object => {
     return element;
 }
 
-const encodeJson = (jsonCode, withURL = false, redirect = false) => {
-    let data = btoa(encodeURIComponent((JSON.stringify(typeof jsonCode === 'object' ? jsonCode : json))));
-    let url = new URL(location.href);
+const jsonToBase64 = (jsonCode, withURL = false, redirect = false) => {
+    let data = btoa(escape((JSON.stringify(typeof jsonCode === 'object' ? jsonCode : json))));
+    let url = currentURL;
 
     if (withURL) {
         url.searchParams.set('data', data);
         if (redirect)
-            return top.location.href = url;
+            return window.top.location.href = url;
 
         data = url.href
             // Replace %3D ('=' url encoded) with '='
@@ -80,15 +87,10 @@ const encodeJson = (jsonCode, withURL = false, redirect = false) => {
     return data;
 };
 
-const decodeJson = data => {
-    const jsonData = decodeURIComponent(atob(data || dataSpecified));
+const base64ToJson = data => {
+    const jsonData = unescape(atob(data || dataSpecified));
     return typeof jsonData === 'string' ? JSON.parse(jsonData) : jsonData;
 };
-
-// IMPORTANT: jsonToBase64 and base64ToJson are subject to removal.
-// Use encodeJson and decodeJson instead, they are aliases.
-let jsonToBase64 = encodeJson, base64ToJson = decodeJson;
-
 
 const toRGB = (hex, reversed, integer) => {
     if (reversed) return '#' + hex.match(/\d+/g).map(x => parseInt(x).toString(16).padStart(2, '0')).join('');
@@ -108,10 +110,9 @@ const reverse = (reversed, callback) => {
 };
 
 const urlOptions = ({ remove, set }) => {
-    const url = new URL(location.href);
+    const url = currentURL();
     if (remove) url.searchParams.delete(remove);
     if (set) url.searchParams.set(set[0], set[1]);
-    
     try {
         history.replaceState(null, null, url.href.replace(/(?<!data=[^=]+|=)=(&|$)/g, x => x === '=' ? '' : '&'));
     } catch (e) {
@@ -179,7 +180,7 @@ const changeLastActiveGuiEmbed = index => {
 }
 
 // Called after building embed for extra work.
-const afterBuilding = () => autoUpdateURL && urlOptions({ set: ['data', encodeJson(json)] });
+const afterBuilding = () => autoUpdateURL && urlOptions({ set: ['data', jsonToBase64(json)] });
 // Parses emojis to images and adds code highlighting.
 const externalParsing = ({ noEmojis, element } = {}) => {
     !noEmojis && twemoji.parse(element || document.querySelector('.msgEmbed'), { base: 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/' });
@@ -198,7 +199,7 @@ let mainKeys = ["embed", "embeds", "content"];
 let allJsonKeys = [...mainKeys, ...embedKeys];
 
 // 'jsonObject' is used internally, do not change it's value. Assign to 'json' instead.
-// 'json' is the object that is used to build the embed. Assigning to it also updates the editor.
+// 'json' is the object that is used to build the embed. Assisgning to it also updates the editor.
 let jsonObject = window.json || {
     content: "You can~~not~~ do `this`.```py\nAnd this.\nprint('Hi')```\n*italics* or _italics_     __*underline italics*__\n**bold**     __**underline bold**__\n***bold italics***  __***underline bold italics***__\n__underline__     ~~Strikethrough~~",
     embed: {
@@ -208,7 +209,7 @@ let jsonObject = window.json || {
         timestamp: new Date().toISOString(),
         url: "https://discord.com",
         author: {
-            name: "Author name",
+            name: "Nome do autor",
             url: "https://discord.com",
             icon_url: "https://cdn.discordapp.com/embed/avatars/0.png"
         },
@@ -257,7 +258,7 @@ let jsonObject = window.json || {
 }
 
 if (dataSpecified)
-    jsonObject = decodeJson();
+    jsonObject = base64ToJson();
 
 if (allowPlaceholders)
     allowPlaceholders = params.get('placeholders') === 'errors' ? 1 : 2;
@@ -291,10 +292,10 @@ addEventListener('DOMContentLoaded', () => {
         document.querySelector('.item.auto > input').checked = true;
     }
 
-    if (single) {
-        document.body.classList.add('single');
+    if (multiEmbeds) {
+        document.body.classList.add('multiEmbeds');
         if (autoParams)
-            single ? urlOptions({ set: ['single', ''] }) : urlOptions({ remove: 'single' });
+            multiEmbeds ? urlOptions({ set: ['multiembeds', ''] }) : urlOptions({ remove: 'multiembeds' });
     }
 
     if (hideEditor) {
@@ -374,11 +375,11 @@ addEventListener('DOMContentLoaded', () => {
         notif.style.setProperty('--time', time);
         notif.onanimationend = () => notif.style.display = null;
 
-        // If notification element is not already visible, (no other message is already displayed), display it.
+        // If notification element is not already visible, (no other message is already displayed), dispaly it.
         if (!notif.style.display)
             return notif.style.display = 'block', false;
 
-        // If there's a message already displayed, update it and delay animating out.
+        // If there's a message already diplayed, update it and delay animating out.
         notif.style.setProperty('--startY', 0);
         notif.style.setProperty('--startOpacity', 1);
         notif.style.display = null;
@@ -481,7 +482,7 @@ addEventListener('DOMContentLoaded', () => {
                 // Figuring out if there are only two fields on a row to give them more space.
                 // e.fields = json.embeds.fields.
 
-                // if both the field of index 'i' and the next field on it's right are inline and -
+                // if both the field of index 'i' and the next field on its right are inline and -
                 if (fields[i].inline && fields[i + 1]?.inline &&
                     // it's the first field in the embed or -
                     ((i === 0 && fields[i + 2] && !fields[i + 2].inline) || ((
@@ -877,7 +878,7 @@ addEventListener('DOMContentLoaded', () => {
                         formData.append("expiration", expiration); // Expire after 7 days. Discord caches files.
                         formData.append("key", options.uploadKey || "93385e22b0619db73a5525140b13491c"); // Add your own key through the uploadKey option.
                         formData.append("image", el.target.files[0]);
-                        // formData.append("name", ""); // Uses original file name if no "name" is not specified.
+                        // formData.append("name", ""); // Uses original file name if no "name" is not specified.Clear-Host
 
                         browse.classList.add('loading');
 
@@ -949,18 +950,18 @@ addEventListener('DOMContentLoaded', () => {
                     e.classList.add('active');
 
         else if (opts?.guiTabs) {
-            const tabs = (opts.guiTabs.split?.(/, */) || opts.guiTabs).filter(item => item);
+            const tabs = opts.guiTabs.split?.(/, */) || opts.guiTabs;
             const bottomKeys = ['footer', 'image'];
             const topKeys = ['author', 'content'];
+
 
             // Deactivate the default activated GUI fields
             for (const e of gui.querySelectorAll('.item:not(.guiEmbedName).active'))
                 e.classList.remove('active');
 
             // Activate wanted GUI fields
-            if (tabs.length)
-                for (const e of document.querySelectorAll(`.${tabs.join(', .')}`))
-                    e.classList.add('active');
+            for (const e of document.querySelectorAll(`.${tabs.join(', .')}`))
+                e.classList.add('active');
 
             // Autoscroll GUI to the bottom if necessary.
             if (!tabs.some(item => topKeys.includes(item)) && tabs.some(item => bottomKeys.includes(item))) {
@@ -1144,7 +1145,7 @@ addEventListener('DOMContentLoaded', () => {
     }
 
     editor.on('change', editor => {
-        // If the editor value is not set by the user, return.
+        // If the editor value is not set by the user, reuturn.
         if (JSON.stringify(json, null, 4) === editor.getValue()) return;
 
         try {
@@ -1295,7 +1296,7 @@ addEventListener('DOMContentLoaded', () => {
 
     document.querySelector('.top-btn.menu')?.addEventListener('click', e => {
         if (e.target.closest('.item.dataLink')) {
-            const data = encodeJson(json, true).replace(/(?<!data=[^=]+|=)=(&|$)/g, x => x === '=' ? '' : '&');
+            const data = jsonToBase64(json, true).replace(/(?<!data=[^=]+|=)=(&|$)/g, x => x === '=' ? '' : '&');
             if (!window.chrome)
                 // With long text inside a 'prompt' on Chromium based browsers, some text will be trimmed off and replaced with '...'.
                 return prompt('Here\'s the current URL with base64 embed data:', data);
@@ -1313,11 +1314,8 @@ addEventListener('DOMContentLoaded', () => {
                 document.body.removeChild(input);
             }
 
-            return alert('Copied to clipboard.');
+            alert('Copied to clipboard.');
         }
-
-        if (e.target.closest('.item.download'))
-            return createElement({ a: { download: 'embed' + '.json', href: 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(json, null, 4)) } }).click();
 
         const input = e.target.closest('.item')?.querySelector('input');
         if (input) input.checked = !input.checked;
@@ -1326,7 +1324,7 @@ addEventListener('DOMContentLoaded', () => {
             autoUpdateURL = document.body.classList.toggle('autoUpdateURL');
             if (autoUpdateURL) localStorage.setItem('autoUpdateURL', true);
             else localStorage.removeItem('autoUpdateURL');
-            urlOptions({ set: ['data', encodeJson(json)] });
+            urlOptions({ set: ['data', jsonToBase64(json)] });
         } else if (e.target.closest('.item.reverse')) {
             reverse(reverseColumns);
             reverseColumns = !reverseColumns;
@@ -1352,10 +1350,10 @@ addEventListener('DOMContentLoaded', () => {
                 localStorage.setItem(`hide${win}`, true);
             }
         } else if (e.target.closest('.item.multi') && !noMultiEmbedsOption) {
-            multiEmbeds = !document.body.classList.toggle('single');
+            multiEmbeds = document.body.classList.toggle('multiEmbeds');
             activeFields = document.querySelectorAll('.gui > .item.active');
 
-            if (autoParams) !multiEmbeds ? urlOptions({ set: ['single', ''] }) : urlOptions({ remove: 'single' });
+            if (autoParams) multiEmbeds ? urlOptions({ set: ['multiembeds', ''] }) : urlOptions({ remove: 'multiembeds' });
             if (multiEmbeds) localStorage.setItem('multiEmbeds', true);
             else {
                 localStorage.removeItem('multiEmbeds');

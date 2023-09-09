@@ -22,8 +22,8 @@ options = {
     hideEditor: false,
     hidePreview: false,
     hideMenu: false,
-    single: false,
-    noMultiEmbedsOption: false,
+    single: true,
+    noMultiEmbedsOption: true,
     sourceOption: false, // Display link to source code in menu.
 }
 

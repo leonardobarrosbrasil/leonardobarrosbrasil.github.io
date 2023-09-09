@@ -541,9 +541,9 @@ addEventListener('DOMContentLoaded', () => {
             yesterday = new Date(new Date().setDate(today.getDate() - 1)),
             tommorrow = new Date(new Date().setDate(today.getDate() + 1));
 
-        return today.toDateString() === date.toDateString() ? `Today at ${dateArray}` :
-            yesterday.toDateString() === date.toDateString() ? `Yesterday at ${dateArray}` :
-                tommorrow.toDateString() === date.toDateString() ? `Tomorrow at ${dateArray}` :
+        return today.toDateString() === date.toDateString() ? `Hoje às ${dateArray}` :
+            yesterday.toDateString() === date.toDateString() ? `Ontem às ${dateArray}` :
+                tommorrow.toDateString() === date.toDateString() ? `Amanhã às ${dateArray}` :
                     `${String(date.getMonth() + 1).padStart(2, '0')}/${String(date.getDate()).padStart(2, '0')}/${date.getFullYear()}`;
     }
 

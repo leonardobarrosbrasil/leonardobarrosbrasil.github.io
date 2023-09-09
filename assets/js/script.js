@@ -1317,9 +1317,6 @@ addEventListener('DOMContentLoaded', () => {
             alert('Copied to clipboard.');
         }
 
-        if (e.target.closest('.item.download'))
-            return createElement({ a: { download: 'embed' + '.json', href: 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(json, null, 4)) } }).click();
-
         const input = e.target.closest('.item')?.querySelector('input');
         if (input) input.checked = !input.checked;
 

@@ -1308,7 +1308,7 @@ addEventListener('DOMContentLoaded', () => {
                 document.body.removeChild(input);
             }
 
-            return alert('Copiado para a área de transferência.');
+            alert('Copiado para a área de transferência.');
         }
 
         if (e.target.closest('.item.download'))

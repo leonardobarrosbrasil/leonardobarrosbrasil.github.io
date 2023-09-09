@@ -8,17 +8,9 @@ window.options ??= {};
 window.inIframe ??= top !== self;
 mainHost = "glitchii.github.io";
 
-Object.defineProperty(window, 'currentURL', {
-    get() {
-        // Get the current url or referrer url if in iframe
-        const urlRegex = /(https?:\/\/(?:[\d\w]+\.)?[\d\w\.]+(?::\d+)?)/g;
-        return new URL(inIframe ? urlRegex.exec(document.referrer)?.[0] || location.href : location.href);
-    }
-});
-
-let params = currentURL.searchParams,
+let params = new URLSearchParams(location.search),
     hasParam = param => params.get(param) !== null,
-    dataSpecified = options.dataSpecified || params.get('data'),
+    dataSpecified = options.data || params.get('data'),
     username = params.get('username') || options.username,
     avatar = params.get('avatar') || options.avatar,
     guiTabs = params.get('guitabs') || options.guiTabs,
@@ -30,7 +22,8 @@ let params = currentURL.searchParams,
     allowPlaceholders = hasParam('placeholders') || options.allowPlaceholders,
     autoUpdateURL = localStorage.getItem('autoUpdateURL') || options.autoUpdateURL,
     noMultiEmbedsOption = localStorage.getItem('noMultiEmbedsOption') || hasParam('nomultiembedsoption') || options.noMultiEmbedsOption,
-    multiEmbeds = noMultiEmbedsOption ? options.multiEmbeds ?? true : (localStorage.getItem('multiEmbeds') || hasParam('multiembeds') || options.multiEmbeds) ?? true,
+    single = noMultiEmbedsOption ? options.single ?? true : (localStorage.getItem('single') || hasParam('single') || options.single) ?? false,
+    multiEmbeds = !single,
     autoParams = localStorage.getItem('autoParams') || hasParam('autoparams') || options.autoParams,
     hideEditor = localStorage.getItem('hideeditor') || hasParam('hideeditor') || options.hideEditor,
     hidePreview = localStorage.getItem('hidepreview') || hasParam('hidepreview') || options.hidePreview,
@@ -92,6 +85,11 @@ const decodeJson = data => {
     return typeof jsonData === 'string' ? JSON.parse(jsonData) : jsonData;
 };
 
+// IMPORTANT: jsonToBase64 and base64ToJson are subject to removal.
+// Use encodeJson and decodeJson instead, they are aliases.
+let jsonToBase64 = encodeJson, base64ToJson = decodeJson;
+
+
 const toRGB = (hex, reversed, integer) => {
     if (reversed) return '#' + hex.match(/\d+/g).map(x => parseInt(x).toString(16).padStart(2, '0')).join('');
     if (integer) return parseInt(hex.match(/\d+/g).map(x => parseInt(x).toString(16).padStart(2, '0')).join(''), 16);
@@ -110,9 +108,10 @@ const reverse = (reversed, callback) => {
 };
 
 const urlOptions = ({ remove, set }) => {
-    const url = currentURL();
+    const url = new URL(location.href);
     if (remove) url.searchParams.delete(remove);
     if (set) url.searchParams.set(set[0], set[1]);
+    
     try {
         history.replaceState(null, null, url.href.replace(/(?<!data=[^=]+|=)=(&|$)/g, x => x === '=' ? '' : '&'));
     } catch (e) {
@@ -180,7 +179,7 @@ const changeLastActiveGuiEmbed = index => {
 }
 
 // Called after building embed for extra work.
-const afterBuilding = () => autoUpdateURL && urlOptions({ set: ['data', jsonToBase64(json)] });
+const afterBuilding = () => autoUpdateURL && urlOptions({ set: ['data', encodeJson(json)] });
 // Parses emojis to images and adds code highlighting.
 const externalParsing = ({ noEmojis, element } = {}) => {
     !noEmojis && twemoji.parse(element || document.querySelector('.msgEmbed'), { base: 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/' });
@@ -199,7 +198,7 @@ let mainKeys = ["embed", "embeds", "content"];
 let allJsonKeys = [...mainKeys, ...embedKeys];
 
 // 'jsonObject' is used internally, do not change it's value. Assign to 'json' instead.
-// 'json' is the object that is used to build the embed. Assisgning to it also updates the editor.
+// 'json' is the object that is used to build the embed. Assigning to it also updates the editor.
 let jsonObject = window.json || {
     content: "You can~~not~~ do `this`.```py\nAnd this.\nprint('Hi')```\n*italics* or _italics_     __*underline italics*__\n**bold**     __**underline bold**__\n***bold italics***  __***underline bold italics***__\n__underline__     ~~Strikethrough~~",
     embed: {
@@ -258,7 +257,7 @@ let jsonObject = window.json || {
 }
 
 if (dataSpecified)
-    jsonObject = base64ToJson();
+    jsonObject = decodeJson();
 
 if (allowPlaceholders)
     allowPlaceholders = params.get('placeholders') === 'errors' ? 1 : 2;
@@ -292,10 +291,10 @@ addEventListener('DOMContentLoaded', () => {
         document.querySelector('.item.auto > input').checked = true;
     }
 
-    if (multiEmbeds) {
-        document.body.classList.add('multiEmbeds');
+    if (single) {
+        document.body.classList.add('single');
         if (autoParams)
-            multiEmbeds ? urlOptions({ set: ['multiembeds', ''] }) : urlOptions({ remove: 'multiembeds' });
+            single ? urlOptions({ set: ['single', ''] }) : urlOptions({ remove: 'single' });
     }
 
     if (hideEditor) {
@@ -375,11 +374,11 @@ addEventListener('DOMContentLoaded', () => {
         notif.style.setProperty('--time', time);
         notif.onanimationend = () => notif.style.display = null;
 
-        // If notification element is not already visible, (no other message is already displayed), dispaly it.
+        // If notification element is not already visible, (no other message is already displayed), display it.
         if (!notif.style.display)
             return notif.style.display = 'block', false;
 
-        // If there's a message already diplayed, update it and delay animating out.
+        // If there's a message already displayed, update it and delay animating out.
         notif.style.setProperty('--startY', 0);
         notif.style.setProperty('--startOpacity', 1);
         notif.style.display = null;
@@ -482,7 +481,7 @@ addEventListener('DOMContentLoaded', () => {
                 // Figuring out if there are only two fields on a row to give them more space.
                 // e.fields = json.embeds.fields.
 
-                // if both the field of index 'i' and the next field on its right are inline and -
+                // if both the field of index 'i' and the next field on it's right are inline and -
                 if (fields[i].inline && fields[i + 1]?.inline &&
                     // it's the first field in the embed or -
                     ((i === 0 && fields[i + 2] && !fields[i + 2].inline) || ((
@@ -878,7 +877,7 @@ addEventListener('DOMContentLoaded', () => {
                         formData.append("expiration", expiration); // Expire after 7 days. Discord caches files.
                         formData.append("key", options.uploadKey || "93385e22b0619db73a5525140b13491c"); // Add your own key through the uploadKey option.
                         formData.append("image", el.target.files[0]);
-                        // formData.append("name", ""); // Uses original file name if no "name" is not specified.Clear-Host
+                        // formData.append("name", ""); // Uses original file name if no "name" is not specified.
 
                         browse.classList.add('loading');
 
@@ -950,18 +949,18 @@ addEventListener('DOMContentLoaded', () => {
                     e.classList.add('active');
 
         else if (opts?.guiTabs) {
-            const tabs = opts.guiTabs.split?.(/, */) || opts.guiTabs;
+            const tabs = (opts.guiTabs.split?.(/, */) || opts.guiTabs).filter(item => item);
             const bottomKeys = ['footer', 'image'];
             const topKeys = ['author', 'content'];
-
 
             // Deactivate the default activated GUI fields
             for (const e of gui.querySelectorAll('.item:not(.guiEmbedName).active'))
                 e.classList.remove('active');
 
             // Activate wanted GUI fields
-            for (const e of document.querySelectorAll(`.${tabs.join(', .')}`))
-                e.classList.add('active');
+            if (tabs.length)
+                for (const e of document.querySelectorAll(`.${tabs.join(', .')}`))
+                    e.classList.add('active');
 
             // Autoscroll GUI to the bottom if necessary.
             if (!tabs.some(item => topKeys.includes(item)) && tabs.some(item => bottomKeys.includes(item))) {
@@ -1145,7 +1144,7 @@ addEventListener('DOMContentLoaded', () => {
     }
 
     editor.on('change', editor => {
-        // If the editor value is not set by the user, reuturn.
+        // If the editor value is not set by the user, return.
         if (JSON.stringify(json, null, 4) === editor.getValue()) return;
 
         try {
@@ -1296,7 +1295,7 @@ addEventListener('DOMContentLoaded', () => {
 
     document.querySelector('.top-btn.menu')?.addEventListener('click', e => {
         if (e.target.closest('.item.dataLink')) {
-            const data = jsonToBase64(json, true).replace(/(?<!data=[^=]+|=)=(&|$)/g, x => x === '=' ? '' : '&');
+            const data = encodeJson(json, true).replace(/(?<!data=[^=]+|=)=(&|$)/g, x => x === '=' ? '' : '&');
             if (!window.chrome)
                 // With long text inside a 'prompt' on Chromium based browsers, some text will be trimmed off and replaced with '...'.
                 return prompt('Here\'s the current URL with base64 embed data:', data);
@@ -1304,7 +1303,7 @@ addEventListener('DOMContentLoaded', () => {
             // So, for the Chromium users, we copy to clipboard instead of showing a prompt.
             try {
                 // Clipboard API might only work on HTTPS protocol.
-                copyToClipboard(JSON.stringify(json, null, 0))
+                navigator.clipboard.writeText(data);
             } catch {
                 const input = document.body.appendChild(document.createElement('input'));
                 input.value = data;
@@ -1314,21 +1313,11 @@ addEventListener('DOMContentLoaded', () => {
                 document.body.removeChild(input);
             }
 
-            alert('Copied to clipboard.');
+            return alert('Copied to clipboard.');
         }
 
-        function copyToClipboard(text) {
-            var dummy = document.createElement("textarea");
-            // to avoid breaking orgain page when copying more words
-            // cant copy when adding below this code
-            // dummy.style.display = 'none'
-            document.body.appendChild(dummy);
-            //Be careful if you use texarea. setAttribute('value', value), which works with "input" does not work with "textarea". – Eduard
-            dummy.value = text;
-            dummy.select();
-            document.execCommand("copy");
-            document.body.removeChild(dummy);
-        }
+        if (e.target.closest('.item.download'))
+            return createElement({ a: { download: 'embed' + '.json', href: 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(json, null, 4)) } }).click();
 
         const input = e.target.closest('.item')?.querySelector('input');
         if (input) input.checked = !input.checked;
@@ -1337,7 +1326,7 @@ addEventListener('DOMContentLoaded', () => {
             autoUpdateURL = document.body.classList.toggle('autoUpdateURL');
             if (autoUpdateURL) localStorage.setItem('autoUpdateURL', true);
             else localStorage.removeItem('autoUpdateURL');
-            urlOptions({ set: ['data', jsonToBase64(json)] });
+            urlOptions({ set: ['data', encodeJson(json)] });
         } else if (e.target.closest('.item.reverse')) {
             reverse(reverseColumns);
             reverseColumns = !reverseColumns;
@@ -1363,10 +1352,10 @@ addEventListener('DOMContentLoaded', () => {
                 localStorage.setItem(`hide${win}`, true);
             }
         } else if (e.target.closest('.item.multi') && !noMultiEmbedsOption) {
-            multiEmbeds = document.body.classList.toggle('multiEmbeds');
+            multiEmbeds = !document.body.classList.toggle('single');
             activeFields = document.querySelectorAll('.gui > .item.active');
 
-            if (autoParams) multiEmbeds ? urlOptions({ set: ['multiembeds', ''] }) : urlOptions({ remove: 'multiembeds' });
+            if (autoParams) !multiEmbeds ? urlOptions({ set: ['single', ''] }) : urlOptions({ remove: 'single' });
             if (multiEmbeds) localStorage.setItem('multiEmbeds', true);
             else {
                 localStorage.removeItem('multiEmbeds');

@@ -8,9 +8,17 @@ window.options ??= {};
 window.inIframe ??= top !== self;
 mainHost = "glitchii.github.io";
 
-let params = new URLSearchParams(location.search),
+Object.defineProperty(window, 'currentURL', {
+    get() {
+        // Get the current url or referrer url if in iframe
+        const urlRegex = /(https?:\/\/(?:[\d\w]+\.)?[\d\w\.]+(?::\d+)?)/g;
+        return new URL(inIframe ? urlRegex.exec(document.referrer)?.[0] || location.href : location.href);
+    }
+});
+
+let params = currentURL.searchParams,
     hasParam = param => params.get(param) !== null,
-    dataSpecified = options.data || params.get('data'),
+    dataSpecified = options.dataSpecified || params.get('data'),
     username = params.get('username') || options.username,
     avatar = params.get('avatar') || options.avatar,
     guiTabs = params.get('guitabs') || options.guiTabs,
@@ -22,8 +30,7 @@ let params = new URLSearchParams(location.search),
     allowPlaceholders = hasParam('placeholders') || options.allowPlaceholders,
     autoUpdateURL = localStorage.getItem('autoUpdateURL') || options.autoUpdateURL,
     noMultiEmbedsOption = localStorage.getItem('noMultiEmbedsOption') || hasParam('nomultiembedsoption') || options.noMultiEmbedsOption,
-    single = noMultiEmbedsOption ? options.single ?? true : (localStorage.getItem('single') || hasParam('single') || options.single) ?? false,
-    multiEmbeds = !single,
+    multiEmbeds = noMultiEmbedsOption ? options.multiEmbeds ?? true : (localStorage.getItem('multiEmbeds') || hasParam('multiembeds') || options.multiEmbeds) ?? true,
     autoParams = localStorage.getItem('autoParams') || hasParam('autoparams') || options.autoParams,
     hideEditor = localStorage.getItem('hideeditor') || hasParam('hideeditor') || options.hideEditor,
     hidePreview = localStorage.getItem('hidepreview') || hasParam('hidepreview') || options.hidePreview,
@@ -103,10 +110,9 @@ const reverse = (reversed, callback) => {
 };
 
 const urlOptions = ({ remove, set }) => {
-    const url = new URL(location.href);
+    const url = currentURL();
     if (remove) url.searchParams.delete(remove);
     if (set) url.searchParams.set(set[0], set[1]);
-    
     try {
         history.replaceState(null, null, url.href.replace(/(?<!data=[^=]+|=)=(&|$)/g, x => x === '=' ? '' : '&'));
     } catch (e) {
@@ -163,10 +169,10 @@ const changeLastActiveGuiEmbed = index => {
 
         const guiEmbedNames = document.querySelectorAll('.gui .item.guiEmbedName');
         pickerEmbedText.onclick = () => {
-            const newIndex = parseInt(prompt('Insira um número de incorporação' + (guiEmbedNames.length > 1 ? `, 1 - ${guiEmbedNames.length}` : ''), index + 1));
+            const newIndex = parseInt(prompt('Enter an embed number' + (guiEmbedNames.length > 1 ? `, 1 - ${guiEmbedNames.length}` : ''), index + 1));
             if (isNaN(newIndex)) return;
             if (newIndex < 1 || newIndex > guiEmbedNames.length)
-                return error(guiEmbedNames.length === 1 ? `'${newIndex}' não é um número de incorporação válido` : `'${newIndex}' não parece um número entre 1 e ${guiEmbedNames.length}`);
+                return error(guiEmbedNames.length === 1 ? `'${newIndex}' is not a valid embed number` : `'${newIndex}' doesn't seem like a number between 1 and ${guiEmbedNames.length}`);
 
             changeLastActiveGuiEmbed(newIndex - 1);
         }
@@ -193,17 +199,17 @@ let mainKeys = ["embed", "embeds", "content"];
 let allJsonKeys = [...mainKeys, ...embedKeys];
 
 // 'jsonObject' is used internally, do not change it's value. Assign to 'json' instead.
-// 'json' is the object that is used to build the embed. Assigning to it also updates the editor.
+// 'json' is the object that is used to build the embed. Assisgning to it also updates the editor.
 let jsonObject = window.json || {
-    content: "",
+    content: "You can~~not~~ do `this`.```py\nAnd this.\nprint('Hi')```\n*italics* or _italics_     __*underline italics*__\n**bold**     __**underline bold**__\n***bold italics***  __***underline bold italics***__\n__underline__     ~~Strikethrough~~",
     embed: {
-        title: "Olá ~~pessoas~~ do mundo :wave:",
-        description: "Vocë pode usar [links](https://discord.com) ou emojis :smile: 😎\n```\nE também blocos de código\n```",
+        title: "Hello ~~people~~ world :wave:",
+        description: "You can use [links](https://discord.com) or emojis :smile: 😎\n```\nAnd also code blocks\n```",
         color: 0x41f097,
         timestamp: new Date().toISOString(),
         url: "https://discord.com",
         author: {
-            name: "Nome do autor",
+            name: "Author name",
             url: "https://discord.com",
             icon_url: "https://cdn.discordapp.com/embed/avatars/0.png"
         },
@@ -214,37 +220,37 @@ let jsonObject = window.json || {
             url: "https://glitchii.github.io/embedbuilder/assets/media/banner.png"
         },
         footer: {
-            text: "Texto de rodapé",
+            text: "Footer text",
             icon_url: "https://cdn.discordapp.com/embed/avatars/0.png"
         },
         fields: [
             {
-                name: "Seção 1, *lorem* **ipsum**, ~~dolor~~",
+                name: "Field 1, *lorem* **ipsum**, ~~dolor~~",
                 value: "Field value"
             },
             {
-                name: "Seção 2",
-                value: "Vocë pode usar emojis personalizados <:Kekwlaugh:722088222766923847>. <:GangstaBlob:742256196295065661>",
+                name: "Field 2",
+                value: "You can use custom emojis <:Kekwlaugh:722088222766923847>. <:GangstaBlob:742256196295065661>",
                 inline: false
             },
             {
-                name: "Campo embutido",
-                value: "Os campos podem estar embutidos",
+                name: "Inline field",
+                value: "Fields can be inline",
                 inline: true
             },
             {
-                name: "Campo embutido",
+                name: "Inline field",
                 value: "*Lorem ipsum*",
                 inline: true
             },
             {
-                name: "Campo embutido",
+                name: "Inline field",
                 value: "value",
                 inline: true
             },
             {
-                name: "Campo embutido",
-                value: "> Não, não esqueci disso",
+                name: "Another field",
+                value: "> Nope, didn't forget about this",
                 inline: false
             }
         ]
@@ -286,10 +292,10 @@ addEventListener('DOMContentLoaded', () => {
         document.querySelector('.item.auto > input').checked = true;
     }
 
-    if (single) {
-        document.body.classList.add('single');
+    if (multiEmbeds) {
+        document.body.classList.add('multiEmbeds');
         if (autoParams)
-            single ? urlOptions({ set: ['single', ''] }) : urlOptions({ remove: 'single' });
+            multiEmbeds ? urlOptions({ set: ['multiembeds', ''] }) : urlOptions({ remove: 'multiembeds' });
     }
 
     if (hideEditor) {
@@ -369,11 +375,11 @@ addEventListener('DOMContentLoaded', () => {
         notif.style.setProperty('--time', time);
         notif.onanimationend = () => notif.style.display = null;
 
-        // If notification element is not already visible, (no other message is already displayed), display it.
+        // If notification element is not already visible, (no other message is already displayed), dispaly it.
         if (!notif.style.display)
             return notif.style.display = 'block', false;
 
-        // If there's a message already displayed, update it and delay animating out.
+        // If there's a message already diplayed, update it and delay animating out.
         notif.style.setProperty('--startY', 0);
         notif.style.setProperty('--startOpacity', 1);
         notif.style.display = null;
@@ -476,7 +482,7 @@ addEventListener('DOMContentLoaded', () => {
                 // Figuring out if there are only two fields on a row to give them more space.
                 // e.fields = json.embeds.fields.
 
-                // if both the field of index 'i' and the next field on it's right are inline and -
+                // if both the field of index 'i' and the next field on its right are inline and -
                 if (fields[i].inline && fields[i + 1]?.inline &&
                     // it's the first field in the embed or -
                     ((i === 0 && fields[i + 2] && !fields[i + 2].inline) || ((
@@ -536,9 +542,9 @@ addEventListener('DOMContentLoaded', () => {
             yesterday = new Date(new Date().setDate(today.getDate() - 1)),
             tommorrow = new Date(new Date().setDate(today.getDate() + 1));
 
-        return today.toDateString() === date.toDateString() ? `Hoje às ${dateArray}` :
-            yesterday.toDateString() === date.toDateString() ? `Ontem às ${dateArray}` :
-                tommorrow.toDateString() === date.toDateString() ? `Amanhã às ${dateArray}` :
+        return today.toDateString() === date.toDateString() ? `Today at ${dateArray}` :
+            yesterday.toDateString() === date.toDateString() ? `Yesterday at ${dateArray}` :
+                tommorrow.toDateString() === date.toDateString() ? `Tomorrow at ${dateArray}` :
                     `${String(date.getMonth() + 1).padStart(2, '0')}/${String(date.getDate()).padStart(2, '0')}/${date.getFullYear()}`;
     }
 
@@ -872,7 +878,7 @@ addEventListener('DOMContentLoaded', () => {
                         formData.append("expiration", expiration); // Expire after 7 days. Discord caches files.
                         formData.append("key", options.uploadKey || "93385e22b0619db73a5525140b13491c"); // Add your own key through the uploadKey option.
                         formData.append("image", el.target.files[0]);
-                        // formData.append("name", ""); // Uses original file name if no "name" is not specified.
+                        // formData.append("name", ""); // Uses original file name if no "name" is not specified.Clear-Host
 
                         browse.classList.add('loading');
 
@@ -944,18 +950,18 @@ addEventListener('DOMContentLoaded', () => {
                     e.classList.add('active');
 
         else if (opts?.guiTabs) {
-            const tabs = (opts.guiTabs.split?.(/, */) || opts.guiTabs).filter(item => item);
+            const tabs = opts.guiTabs.split?.(/, */) || opts.guiTabs;
             const bottomKeys = ['footer', 'image'];
             const topKeys = ['author', 'content'];
+
 
             // Deactivate the default activated GUI fields
             for (const e of gui.querySelectorAll('.item:not(.guiEmbedName).active'))
                 e.classList.remove('active');
 
             // Activate wanted GUI fields
-            if (tabs.length)
-                for (const e of document.querySelectorAll(`.${tabs.join(', .')}`))
-                    e.classList.add('active');
+            for (const e of document.querySelectorAll(`.${tabs.join(', .')}`))
+                e.classList.add('active');
 
             // Autoscroll GUI to the bottom if necessary.
             if (!tabs.some(item => topKeys.includes(item)) && tabs.some(item => bottomKeys.includes(item))) {
@@ -1139,7 +1145,7 @@ addEventListener('DOMContentLoaded', () => {
     }
 
     editor.on('change', editor => {
-        // If the editor value is not set by the user, return.
+        // If the editor value is not set by the user, reuturn.
         if (JSON.stringify(json, null, 4) === editor.getValue()) return;
 
         try {
@@ -1308,7 +1314,7 @@ addEventListener('DOMContentLoaded', () => {
                 document.body.removeChild(input);
             }
 
-            alert('Copiado para a área de transferência.');
+            alert('Copied to clipboard.');
         }
 
         if (e.target.closest('.item.download'))
@@ -1347,10 +1353,10 @@ addEventListener('DOMContentLoaded', () => {
                 localStorage.setItem(`hide${win}`, true);
             }
         } else if (e.target.closest('.item.multi') && !noMultiEmbedsOption) {
-            multiEmbeds = !document.body.classList.toggle('single');
+            multiEmbeds = document.body.classList.toggle('multiEmbeds');
             activeFields = document.querySelectorAll('.gui > .item.active');
 
-            if (autoParams) !multiEmbeds ? urlOptions({ set: ['single', ''] }) : urlOptions({ remove: 'single' });
+            if (autoParams) multiEmbeds ? urlOptions({ set: ['multiembeds', ''] }) : urlOptions({ remove: 'multiembeds' });
             if (multiEmbeds) localStorage.setItem('multiEmbeds', true);
             else {
                 localStorage.removeItem('multiEmbeds');

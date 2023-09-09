@@ -1665,7 +1665,7 @@ textarea {
 }
 
 .browse>p::after {
-    content: "Browse";
+    content: "Enviar imagem";
 }
 
 .footerDate {

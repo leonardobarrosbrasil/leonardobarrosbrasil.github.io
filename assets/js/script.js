@@ -200,59 +200,11 @@ let allJsonKeys = [...mainKeys, ...embedKeys];
 // 'jsonObject' is used internally, do not change it's value. Assign to 'json' instead.
 // 'json' is the object that is used to build the embed. Assigning to it also updates the editor.
 let jsonObject = window.json || {
-    content: "You can~~not~~ do `this`.```py\nAnd this.\nprint('Hi')```\n*italics* or _italics_     __*underline italics*__\n**bold**     __**underline bold**__\n***bold italics***  __***underline bold italics***__\n__underline__     ~~Strikethrough~~",
+    content: "",
     embed: {
-        title: "Hello ~~people~~ world :wave:",
-        description: "You can use [links](https://discord.com) or emojis :smile: 😎\n```\nAnd also code blocks\n```",
-        color: 0x41f097,
-        timestamp: new Date().toISOString(),
-        url: "https://discord.com",
-        author: {
-            name: "Author name",
-            url: "https://discord.com",
-            icon_url: "https://cdn.discordapp.com/embed/avatars/0.png"
-        },
-        thumbnail: {
-            url: "https://cdn.discordapp.com/embed/avatars/0.png"
-        },
-        image: {
-            url: "https://glitchii.github.io/embedbuilder/assets/media/banner.png"
-        },
-        footer: {
-            text: "Footer text",
-            icon_url: "https://cdn.discordapp.com/embed/avatars/0.png"
-        },
-        fields: [
-            {
-                name: "Field 1, *lorem* **ipsum**, ~~dolor~~",
-                value: "Field value"
-            },
-            {
-                name: "Field 2",
-                value: "You can use custom emojis <:Kekwlaugh:722088222766923847>. <:GangstaBlob:742256196295065661>",
-                inline: false
-            },
-            {
-                name: "Inline field",
-                value: "Fields can be inline",
-                inline: true
-            },
-            {
-                name: "Inline field",
-                value: "*Lorem ipsum*",
-                inline: true
-            },
-            {
-                name: "Inline field",
-                value: "value",
-                inline: true
-            },
-            {
-                name: "Another field",
-                value: "> Nope, didn't forget about this",
-                inline: false
-            }
-        ]
+        title: "Titulo da mensagem",
+        description: "Descrição da mensagem",
+        color: 1975079,
     }
 }
 
@@ -872,7 +824,7 @@ addEventListener('DOMContentLoaded', () => {
 
                     fileInput.onchange = el => {
                         if (el.target.files[0].size > 32 * 1024 * 1024)
-                            return uploadError('File is too large. Maximum size is 32 MB.', browse, 5000);
+                            return uploadError('O arquivo é muito grande. O tamanho máximo é 32 MB.', browse, 5000);
 
                         formData.append("expiration", expiration); // Expire after 7 days. Discord caches files.
                         formData.append("key", options.uploadKey || "93385e22b0619db73a5525140b13491c"); // Add your own key through the uploadKey option.

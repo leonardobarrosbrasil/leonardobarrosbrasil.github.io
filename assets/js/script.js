@@ -85,9 +85,22 @@ const decodeJson = data => {
     return typeof jsonData === 'string' ? JSON.parse(jsonData) : jsonData;
 };
 
-// IMPORTANT: jsonToBase64 and base64ToJson are subject to removal.
-// Use encodeJson and decodeJson instead, they are aliases.
-let jsonToBase64 = encodeJson, base64ToJson = decodeJson;
+const jsonToBase64 = (jsonCode, withURL = false, redirect = false) => {
+    let data = btoa(escape((JSON.stringify(typeof jsonCode === 'object' ? jsonCode : json))));
+    let url = currentURL;
+
+    if (withURL) {
+        url.searchParams.set('data', data);
+        if (redirect)
+            return window.top.location.href = url;
+
+        data = url.href
+            // Replace %3D ('=' url encoded) with '='
+            .replace(/data=\w+(?:%3D)+/g, 'data=' + data);
+    }
+
+    return data;
+};
 
 
 const toRGB = (hex, reversed, integer) => {
@@ -179,7 +192,7 @@ const changeLastActiveGuiEmbed = index => {
 }
 
 // Called after building embed for extra work.
-const afterBuilding = () => autoUpdateURL && urlOptions({ set: ['data', encodeJson(json)] });
+const afterBuilding = () => autoUpdateURL && urlOptions({ set: ['data', jsonToBase64(json)] });
 // Parses emojis to images and adds code highlighting.
 const externalParsing = ({ noEmojis, element } = {}) => {
     !noEmojis && twemoji.parse(element || document.querySelector('.msgEmbed'), { base: 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/' });
@@ -1295,7 +1308,7 @@ addEventListener('DOMContentLoaded', () => {
 
     document.querySelector('.top-btn.menu')?.addEventListener('click', e => {
         if (e.target.closest('.item.dataLink')) {
-            const data = encodeJson(json, true).replace(/(?<!data=[^=]+|=)=(&|$)/g, x => x === '=' ? '' : '&');
+            const data = jsonToBase64(json, true).replace(/(?<!data=[^=]+|=)=(&|$)/g, x => x === '=' ? '' : '&');
             if (!window.chrome)
                 // With long text inside a 'prompt' on Chromium based browsers, some text will be trimmed off and replaced with '...'.
                 return prompt('Here\'s the current URL with base64 embed data:', data);
@@ -1313,7 +1326,7 @@ addEventListener('DOMContentLoaded', () => {
                 document.body.removeChild(input);
             }
 
-            return alert('Copied to clipboard.');
+            return alert('Copiado para a área de transferência.');
         }
 
         if (e.target.closest('.item.download'))
@@ -1326,7 +1339,7 @@ addEventListener('DOMContentLoaded', () => {
             autoUpdateURL = document.body.classList.toggle('autoUpdateURL');
             if (autoUpdateURL) localStorage.setItem('autoUpdateURL', true);
             else localStorage.removeItem('autoUpdateURL');
-            urlOptions({ set: ['data', encodeJson(json)] });
+            urlOptions({ set: ['data', jsonToBase64(json)] });
         } else if (e.target.closest('.item.reverse')) {
             reverse(reverseColumns);
             reverseColumns = !reverseColumns;

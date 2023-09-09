@@ -209,7 +209,7 @@ let jsonObject = window.json || {
         timestamp: new Date().toISOString(),
         url: "https://discord.com",
         author: {
-            name: "Nome do autor",
+            name: "Author name",
             url: "https://discord.com",
             icon_url: "https://cdn.discordapp.com/embed/avatars/0.png"
         },

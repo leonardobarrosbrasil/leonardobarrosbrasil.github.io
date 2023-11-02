@@ -13,7 +13,7 @@ options = {
     verified: false,
     noUser: false,
     data: null,
-    guiTabs: ['author', 'description'],
+    guiTabs: ['title', 'description'],
     useJsonEditor: false,
     reverseColumns: false,
     allowPlaceholders: false,
